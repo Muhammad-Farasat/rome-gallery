@@ -36,24 +36,6 @@ export default function Home() {
         .fromTo(id, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5 })
         .to(id, { opacity: 0, y: -50, duration: 0.5 }, "+=0.5");
     };
-
-    createEmperorTrigger("#augustus", 10, 25);
-    createEmperorTrigger("#caesar", 32, 47);
-    createEmperorTrigger("#trajan", 22, 0);
-    createEmperorTrigger("#aurelius", 77, 92);
-
-    gsap.fromTo("#throne-quote",
-      { opacity: 0 },
-      {
-        opacity: 1,
-        scrollTrigger: {
-          trigger: container.current,
-          start: "94% top",
-          end: "100% top",
-          scrub: true
-        }
-      }
-    );
   }, []);
 
   return (

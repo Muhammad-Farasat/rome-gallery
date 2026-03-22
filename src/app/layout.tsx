@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Infinity",
-  description: "Japaneese history",
+  title: "Rome Gallery",
+  description: "Roman Statues Gallery.",
 };
 
 export default function RootLayout({
