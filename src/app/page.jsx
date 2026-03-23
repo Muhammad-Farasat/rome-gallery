@@ -19,23 +19,10 @@ export default function Home() {
         trigger: container.current,
         start: "top top",
         end: "bottom bottom",
-        scrub: 1,
+        scrub: 0.1,
       },
     });
 
-    // 2. Timeline Trigger Helper
-    const createEmperorTrigger = (id, startPct, endPct) => {
-      gsap.timeline({
-        scrollTrigger: {
-          trigger: container.current,
-          start: `${startPct}% top`,
-          end: `${endPct}% top`,
-          scrub: true,
-        }
-      })
-        .fromTo(id, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.5 })
-        .to(id, { opacity: 0, y: -50, duration: 0.5 }, "+=0.5");
-    };
   }, []);
 
   return (
@@ -46,7 +33,7 @@ export default function Home() {
         </Canvas>
       </div>
 
-      <div className="h-[1000vh] w-full" />
+      <div className="h-[2500vh] w-full" />
     </main>
   );
 }

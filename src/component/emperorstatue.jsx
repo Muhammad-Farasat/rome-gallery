@@ -15,7 +15,10 @@ function EmperorStatue({
     quote,
     textOffset,
     textRotation = [0, 0, 0],
-    podiumColor = "#dcdcdc"
+    podiumColor = "#dcdcdc",
+    podiumOffset = [0, 0, 0],
+    podiumSize = [12, 16, 12],
+    description
 }) {
     if (!url) return null;
 
@@ -70,16 +73,17 @@ function EmperorStatue({
     return (
         <group position={position} rotation={rotation}>
             {/* 1. THE PODIUM (Fits the statue perfectly) */}
-            <mesh position={[0, -podiumHeight / 2, 0]} castShadow receiveShadow>
-                <boxGeometry args={[podiumWidth, podiumHeight, podiumDepth]} />
-                <meshStandardMaterial color={podiumColor} roughness={0.4} metalness={0.1} />
-
-                {/* Subtle Golden Base Trim */}
-                <mesh position={[0, -podiumHeight / 2 + 0.2, 0]}>
-                    <boxGeometry args={[podiumWidth * 1.05, 0.4, podiumDepth * 1.05]} />
+            <group position={podiumOffset}>
+                <mesh castShadow receiveShadow position={[0, -podiumSize[1] / 2, 0]}>
+                    <boxGeometry args={podiumSize} />
+                    <meshStandardMaterial color="#ffffff" roughness={0.3} />
+                </mesh>
+                {/* Golden Base */}
+                <mesh position={[0, -podiumSize[1] + 0.2, 0]}>
+                    <boxGeometry args={[podiumSize[0] + 0.5, 0.5, podiumSize[2] + 0.5]} />
                     <meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} />
                 </mesh>
-            </mesh>
+            </group>
 
             {/* 2. THE STATUE BUST (Positioned to sit exactly on the podium) */}
             <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.2}>
@@ -96,14 +100,24 @@ function EmperorStatue({
                     <div ref={htmlRef} style={{
                         opacity: 0,
                         transition: 'opacity 0.3s ease-out',
-                        width: '500px',
-                        textAlign: textOffset[0] < 0 ? 'right' : 'left',
+                        width: '600px',
+                        // textAlign: textOffset[0] < 0 ? 'right' : 'left'c,
                         pointerEvents: 'none',
                         color: 'white',
-                        textShadow: '0px 0px 20px rgba(0,0,0,0.5)'
+                        // textShadow: '0px 0px 20px rgba(0,0,0,0.5)'
                     }}>
-                        <h1 style={{ fontSize: '5rem', color: '#cba052', margin: 0, fontFamily: 'serif', letterSpacing: '12px', fontWeight: 'normal', textTransform: 'uppercase' }}>{name}</h1>
+                        <h1 style={{ fontSize: '5rem', color: '#FFDF00', margin: 0, fontFamily: 'serif', letterSpacing: '12px', fontWeight: 'normal', textTransform: 'uppercase' }}>{name}</h1>
                         <p style={{ fontSize: '1.4rem', color: '#444', fontStyle: 'italic', marginTop: '5px', maxWidth: '400px', display: 'inline-block' }}>{quote}</p>
+                        <p style={{
+                            fontSize: '0.9rem',
+                            color: '#888',
+                            marginTop: '10px',
+                            maxWidth: '350px',
+                            fontWeight: 'normal',
+                            lineHeight: '1.4'
+                        }}>
+                            {description}
+                        </p>
                     </div>
                 </Html>
             )}
