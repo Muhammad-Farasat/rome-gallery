@@ -5,6 +5,7 @@ import useSpline from '@splinetool/r3f-spline';
 import { PerspectiveCamera, ContactShadows, Float, useGLTF, Html, Environment, MeshReflectorMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 import EmperorStatue from "./emperorstatue";
+import HeavenlyDoor from "./heavenlydoor";
 
 export default function Scene({ scrollData, ...props }) {
     const { nodes, materials } = useSpline('https://prod.spline.design/06MhAi5pkjH87O9s/scene.splinecode');
@@ -21,18 +22,25 @@ export default function Scene({ scrollData, ...props }) {
     useFrame((state) => {
         if (!scrollData || !scrollData.current) return;
 
-        const startZ = 93.6;
+        const progress = scrollData.current.progress;
 
-        // PRECISE FIX: Adjusted from -2800 to -2150.
-        // This stops the camera exactly in front of the throne stairs.
-        const endZ = -1950;
+        // --- PRECISE TIMING CONSTANTS ---
+        const startZ = 140;      // Starting view distance
+        const doorZ = 115;       // Stop point right in front of doors
+        const endZ = -1900;      // Throne position
 
-        const targetZ = THREE.MathUtils.lerp(startZ, endZ, scrollData.current.progress);
+        let targetZ;
+
+        if (progress < 0.20) {
+            targetZ = THREE.MathUtils.lerp(startZ, doorZ, progress / 0.20);
+        } else {
+            const hallProgress = (progress - 0.20) / 0.80;
+            targetZ = THREE.MathUtils.lerp(doorZ, endZ, hallProgress);
+        }
 
         state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.1);
         state.camera.position.y = 7.6;
 
-        // Looking ahead of the camera to keep the throne in focus
         state.camera.lookAt(-6.17, 7.6, targetZ - 100);
     });
 
@@ -46,6 +54,9 @@ export default function Scene({ scrollData, ...props }) {
                 <scene name="Scene 1">
 
                     <Environment preset="city" background={false} />
+
+                    <HeavenlyDoor scrollData={scrollData} />
+
 
                     <directionalLight
                         name="Directional Light 2"
@@ -120,12 +131,12 @@ export default function Scene({ scrollData, ...props }) {
                             name="Aurelius"
                             quote="Our life is what our thoughts make it."
                             description="The Philosopher King and author of 'Meditations', the last of the Five Good Emperors."
-                            position={[-22, 0, -550]}
+                            position={[-22, -2, -550]}
                             rotation={[0, Math.PI / 4, 0]}
                             scale={2}
                             textOffset={[44, 14, 0]}
                             textRotation={[0, -Math.PI / 4, 0]}
-                            podiumOffset={[0, 0, 3]}
+                            podiumOffset={[0, 2, 3]}
                             podiumSize={[20, 1, 20]}
                         />
 
@@ -162,7 +173,7 @@ export default function Scene({ scrollData, ...props }) {
                             name="Vespasian"
                             quote="Money has no smell."
                             description="Founder of the Flavian dynasty who stabilized Rome and began the Colosseum."
-                            position={[10, 0, -1400]}
+                            position={[10, 0, -1250]}
                             rotation={[0, -Math.PI / 6, 0]}
                             scale={38}
                             textOffset={[-35, 3, 0]}
@@ -176,7 +187,7 @@ export default function Scene({ scrollData, ...props }) {
                             name="Nero"
                             quote="Qualis artifex pereo."
                             description="Infamous for his artistic vanity and the collapse of the Julio-Claudian dynasty."
-                            position={[-22, 0, -1550]}
+                            position={[-22, 0, -1400]}
                             rotation={[0, Math.PI / 6, 0]}
                             scale={42}
                             textOffset={[35, 14, 0]}

@@ -28,7 +28,7 @@ export default function Home() {
   return (
     <main ref={container} className="relative bg-[#f8f5f0] font-['Times_New_Roman'] serif overflow-x-hidden">
       <div className="fixed inset-0 h-screen w-full z-0">
-        <Canvas shadows camera={{ position: [-6.17, 7.6, 93.6], fov: 47 }}>
+        <Canvas shadows  camera={{ position: [-6.17, 7.6, 160], fov: 47 }}>
           <Scene scrollData={scrollData} />
         </Canvas>
       </div>
