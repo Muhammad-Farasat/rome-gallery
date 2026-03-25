@@ -117,13 +117,21 @@ export default function Scene({ scrollData, ...props }) {
                             name="Trajan"
                             quote="The best of princes."
                             description="Under his rule, the Roman Empire reached its greatest territorial extent in history."
-                            position={[28, 0, -400]}
-                            rotation={[0, -Math.PI / 4, 0]}
+                            // position={[28, 0, -400]}
+                            // rotation={[0, -Math.PI / 4, 0]}
+                            // scale={28}
+                            // textOffset={[-48, 6, 25]}
+                            // textRotation={[0, Math.PI / 4, 0]}
+                            podiumOffset={[-6, 0, 0]}
+                            podiumSize={[25, 1, 25]}
+
+                            position={[16, 0, -400]}
+                            rotation={[0, Math.PI / 4, 0]}
                             scale={28}
-                            textOffset={[-48, 6, 25]}
-                            textRotation={[0, Math.PI / 4, 0]}
-                            podiumOffset={[-6, 0, 20]}
-                            podiumSize={[14, 1, 14]}
+
+                            // 🔥 TEXT: Flipped offset to positive 48 so it floats in the hallway center
+                            textOffset={[-18, 6, -16]}
+                            textRotation={[0, -Math.PI / 4, 0]}
                         />
 
                         <EmperorStatue
