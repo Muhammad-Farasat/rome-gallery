@@ -1,6 +1,6 @@
 "use client";
 import { Suspense, useRef, useMemo, useState } from "react"; // Added useState
-import { useFrame } from "@react-three/fiber";
+import { useThree, useFrame } from "@react-three/fiber";
 import useSpline from '@splinetool/r3f-spline';
 import { PerspectiveCamera, ContactShadows, Float, useGLTF, Html, Environment, MeshReflectorMaterial } from '@react-three/drei';
 import * as THREE from 'three';
@@ -20,6 +20,10 @@ function EmperorStatue({
     description
 }) {
     if (!url) return null;
+
+    const { size } = useThree();
+    const isMobile = size.width > 0 && size.width < 768;
+    const mobileScaleFactor = isMobile ? 0.65 : 1;
 
     const { scene } = useGLTF(url);
     const clonedScene = useMemo(() => scene.clone(), [scene]);
@@ -54,6 +58,7 @@ function EmperorStatue({
     // const podiumHeight = 12;
 
     const { localOffset } = useMemo(() => {
+        if (!clonedScene) return { localOffset: [0, 0, 0] };
         const bbox = new THREE.Box3().setFromObject(clonedScene);
         const center = new THREE.Vector3();
         bbox.getCenter(center);
@@ -72,9 +77,16 @@ function EmperorStatue({
         const statueZ = position[2];
         const distance = camZ - statueZ;
         let opacity = 0;
-        if (distance < 80 && distance > -15) {
-            if (distance > 40) opacity = THREE.MathUtils.mapLinear(distance, 80, 40, 0, 1);
-            else if (distance < 5) opacity = THREE.MathUtils.mapLinear(distance, 5, -15, 1, 0);
+
+        // Mobile needs to fade out SOONER so it doesn't get huge as we pass it
+        const fadeInStart = isMobile ? 150 : 80;
+        const fadeInEnd = isMobile ? 80 : 40;
+        const fadeOutStart = isMobile ? 20 : 5;
+        const fadeOutEnd = isMobile ? -30 : -15;
+
+        if (distance < fadeInStart && distance > fadeOutEnd) {
+            if (distance > fadeInEnd) opacity = THREE.MathUtils.mapLinear(distance, fadeInStart, fadeInEnd, 0, 1);
+            else if (distance < fadeOutStart) opacity = THREE.MathUtils.mapLinear(distance, fadeOutStart, fadeOutEnd, 1, 0);
             else opacity = 1;
         }
         htmlRef.current.style.opacity = opacity;
@@ -112,59 +124,94 @@ function EmperorStatue({
         lastPointerX.current = e.clientX;
     };
 
+    // --- RESPONSIVE POSITIONING ---
+    // If we're on mobile, we want to pull statues closer to the center (-3)
+    const centerX = -3;
+    const desktopCenterX = -6.17;
+    const currentSceneCenter = isMobile ? centerX : desktopCenterX;
+
+    const responsiveX = isMobile
+        ? currentSceneCenter + (position[0] - desktopCenterX) * 0.5 // Pull towards mobile center
+        : position[0];
+
     return (
-        <group position={position} rotation={rotation}>
-            {/* 1. THE PODIUM (Untouched) */}
-            <group position={podiumOffset}>
-                <mesh castShadow receiveShadow position={[0, -podiumSize[1] / 2, 0]}>
-                    <boxGeometry args={podiumSize} />
-                    <meshStandardMaterial color="#ffffff" roughness={0.3} />
-                </mesh>
-                <mesh position={[0, -podiumSize[1] + 0.2, 0]}>
-                    <boxGeometry args={[podiumSize[0] + 0.5, 0.5, podiumSize[2] + 0.5]} />
-                    <meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} />
-                </mesh>
+        <group position={[responsiveX, position[1], position[2]]} rotation={rotation}>
+            <group scale={mobileScaleFactor}>
+                {/* 1. THE PODIUM */}
+                <group position={podiumOffset}>
+                    <mesh castShadow receiveShadow position={[0, -podiumSize[1] / 2, 0]}>
+                        <boxGeometry args={podiumSize} />
+                        <meshStandardMaterial color="#ffffff" roughness={0.3} />
+                    </mesh>
+                    <mesh position={[0, -podiumSize[1] + 0.2, 0]}>
+                        <boxGeometry args={[podiumSize[0] + 0.5, 0.5, podiumSize[2] + 0.5]} />
+                        <meshStandardMaterial color="#D4AF37" metalness={0.8} roughness={0.2} />
+                    </mesh>
+                </group>
+
+                {/* 2. THE INTERACTIVE STATUE BUST */}
+                <group
+                    ref={interactiveGroupRef}
+                    onPointerDown={handlePointerDown}
+                    onPointerUp={handlePointerUp}
+                    onPointerLeave={handlePointerUp}
+                    onPointerMove={handlePointerMove}
+                    onPointerOver={() => !isDragging && (document.body.style.cursor = 'grab')}
+                    onPointerOut={() => !isDragging && (document.body.style.cursor = 'auto')}
+                >
+                    <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.2}>
+                        <primitive
+                            object={clonedScene}
+                            scale={scale}
+                            position={localOffset}
+                        />
+                    </Float>
+                </group>
             </group>
 
-            {/* 2. THE INTERACTIVE STATUE BUST */}
-            <group
-                ref={interactiveGroupRef}
-                onPointerDown={handlePointerDown}
-                onPointerUp={handlePointerUp}
-                onPointerLeave={handlePointerUp}
-                onPointerMove={handlePointerMove}
-                onPointerOver={() => !isDragging && (document.body.style.cursor = 'grab')}
-                onPointerOut={() => !isDragging && (document.body.style.cursor = 'auto')}
-            >
-                <Float speed={1.5} rotationIntensity={0.1} floatIntensity={0.2}>
-                    <primitive
-                        object={clonedScene}
-                        scale={scale}
-                        // position={[0, offsetToBottom, 0]}
-                        position={localOffset}
-                    />
-                </Float>
-            </group>
-
-            {/* 3. INFO TEXT (Untouched) */}
+            {/* 3. INFO TEXT */}
             {name && (
-                <Html position={textOffset} center transform distanceFactor={30} rotation={textRotation}>
+                <Html
+                    position={textOffset}
+                    center
+                    transform
+                    distanceFactor={isMobile ? 80 : 30}
+                    rotation={textRotation}
+                >
                     <div ref={htmlRef} style={{
                         opacity: 0,
                         transition: 'opacity 0.3s ease-out',
-                        width: '600px',
+                        width: isMobile ? '100px' : '600px',
                         pointerEvents: 'none',
                         color: 'white',
+                        textAlign: 'left',
+                        // textShadow: isMobile ? '0px 0px 4px rgba(0,0,0,0.5)' : 'none'
                     }}>
-                        <h1 style={{ fontSize: '5rem', color: '#FFDF00', margin: 0, fontFamily: 'serif', letterSpacing: '12px', fontWeight: 'normal', textTransform: 'uppercase' }}>{name}</h1>
-                        <p style={{ fontSize: '1.4rem', color: '#444', fontStyle: 'italic', marginTop: '5px', maxWidth: '400px', display: 'inline-block' }}>{quote}</p>
-                        <p style={{
-                            fontSize: '0.9rem',
-                            color: '#888',
-                            marginTop: '10px',
-                            maxWidth: '350px',
+                        <h1 style={{
+                            fontSize: isMobile ? '16px' : '5rem',
+                            color: '#FFDF00',
+                            margin: 0,
+                            fontFamily: 'serif',
+                            letterSpacing: isMobile ? '2px' : '12px',
                             fontWeight: 'normal',
-                            lineHeight: '1.4'
+                            textTransform: 'uppercase',
+                            lineHeight: 1
+                        }}>{name}</h1>
+                        <p style={{
+                            fontSize: isMobile ? '8px' : '1.4rem',
+                            color: '#eee',
+                            fontStyle: 'italic',
+                            marginTop: '2px',
+                            maxWidth: isMobile ? '140px' : '400px',
+                            display: 'inline-block'
+                        }}>{quote}</p>
+                        <p style={{
+                            fontSize: isMobile ? '8px' : '0.9rem',
+                            color: '#ccc',
+                            marginTop: '5px',
+                            maxWidth: isMobile ? '130px' : '350px',
+                            fontWeight: 'normal',
+                            lineHeight: '1.2'
                         }}>
                             {description}
                         </p>

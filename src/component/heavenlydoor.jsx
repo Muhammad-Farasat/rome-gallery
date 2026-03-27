@@ -1,10 +1,12 @@
-import React, { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { useTexture } from '@react-three/drei';
 import * as THREE from 'three';
+import { useRef, useMemo } from 'react';
 
 // 1. Receive scrollData (the Ref) instead of progress (the static number)
 function HeavenlyDoor({ scrollData }) {
+    const { size } = useThree();
+    const isMobile = size.width < 768;
     const leftDoor = useRef();
     const rightDoor = useRef();
     const portalRef = useRef();
@@ -52,22 +54,22 @@ function HeavenlyDoor({ scrollData }) {
     });
 
     return (
-        <group position={[-6.17, 7.6, 110]}>
+        <group position={[isMobile ? -3 : -6.17, 7.6, 110]}>
             <mesh ref={portalRef} position={[0, 5, -1]}>
                 <planeGeometry args={[200, 100]} />
                 <meshBasicMaterial color="#ffffff" transparent depthWrite={false} />
             </mesh>
 
             <group ref={leftDoor} position={[-7.5, 0, 0]}>
-                <mesh position={[-11, 3.7, 0]} castShadow>
-                    <boxGeometry args={[38, 24, 0]} />
+                <mesh position={[-11, isMobile ? 11.7 : 2.6, 0]} castShadow>
+                    <boxGeometry args={[38, isMobile ? 40 : 22, 0]} />
                     <meshStandardMaterial map={leftTex} roughness={0.3} />
                 </mesh>
             </group>
 
             <group ref={rightDoor} position={[7.5, 0, 0]}>
-                <mesh position={[12, 3.7, 0]} castShadow>
-                    <boxGeometry args={[38, 24, 0]} />
+                <mesh position={[12, isMobile ? 11.7 : 2.6, 0]} castShadow>
+                    <boxGeometry args={[38, isMobile ? 40 : 22, 0]} />
                     <meshStandardMaterial map={rightTex} roughness={0.3} />
                 </mesh>
             </group>

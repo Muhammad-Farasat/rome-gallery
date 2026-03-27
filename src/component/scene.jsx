@@ -1,6 +1,6 @@
 "use client";
 import { Suspense, useRef, useMemo } from "react";
-import { useFrame } from "@react-three/fiber";
+import { useThree, useFrame } from "@react-three/fiber";
 import useSpline from '@splinetool/r3f-spline';
 import { PerspectiveCamera, ContactShadows, Float, useGLTF, Html, Environment, MeshReflectorMaterial } from '@react-three/drei';
 import * as THREE from 'three';
@@ -8,6 +8,8 @@ import EmperorStatue from "./emperorstatue";
 import HeavenlyDoor from "./heavenlydoor";
 
 export default function Scene({ scrollData, ...props }) {
+    const { size } = useThree();
+    const isMobile = size.width < 768;
     const { nodes, materials } = useSpline('https://prod.spline.design/06MhAi5pkjH87O9s/scene.splinecode');
 
     useMemo(() => {
@@ -25,7 +27,7 @@ export default function Scene({ scrollData, ...props }) {
         const progress = scrollData.current.progress;
 
         // --- PRECISE TIMING CONSTANTS ---
-        const startZ = 140;      // Starting view distance
+        const startZ = isMobile ? 180 : 140;      // Start further back on mobile
         const doorZ = 115;       // Stop point right in front of doors
         const endZ = -1900;      // Throne position
 
@@ -39,9 +41,12 @@ export default function Scene({ scrollData, ...props }) {
         }
 
         state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.1);
-        state.camera.position.y = 7.6;
+        state.camera.position.y = isMobile ? 9 : 7.6; // Slightly higher on mobile
+        state.camera.position.x = isMobile ? -3 : -6.17; // Align camera position with lookX
 
-        state.camera.lookAt(-6.17, 7.6, targetZ - 100);
+        // On mobile, keep the camera slightly more centered maybe?
+        const lookX = isMobile ? -3 : -6.17;
+        state.camera.lookAt(lookX, 7.6, targetZ - 100);
     });
 
     return (
@@ -92,7 +97,7 @@ export default function Scene({ scrollData, ...props }) {
                             position={[10, 0, -40]}
                             rotation={[0, -Math.PI / 0.15, 0]}
                             scale={28}
-                            textOffset={[4, 8, 30]}
+                            textOffset={isMobile ? [-16, 8, 30] : [4, 8, 30]}
                             textRotation={[0, Math.PI / 1.5, 0]}
                             podiumOffset={[0, 0, 0]}
                             podiumSize={[20, 1, 20]}
@@ -106,7 +111,7 @@ export default function Scene({ scrollData, ...props }) {
                             position={[-20, 0, -220]}
                             rotation={[0, Math.PI / 4, 0]}
                             scale={8}
-                            textOffset={[40, 4, 0]}
+                            textOffset={isMobile ? [18, 4, 0] : [40, 4, 0]}
                             textRotation={[0, -Math.PI / 4, 0]}
                             podiumOffset={[0, 0, 0]}
                             podiumSize={[20, 1, 20]}
@@ -117,11 +122,6 @@ export default function Scene({ scrollData, ...props }) {
                             name="Trajan"
                             quote="The best of princes."
                             description="Under his rule, the Roman Empire reached its greatest territorial extent in history."
-                            // position={[28, 0, -400]}
-                            // rotation={[0, -Math.PI / 4, 0]}
-                            // scale={28}
-                            // textOffset={[-48, 6, 25]}
-                            // textRotation={[0, Math.PI / 4, 0]}
                             podiumOffset={[-6, 0, 0]}
                             podiumSize={[25, 1, 25]}
 
@@ -129,7 +129,6 @@ export default function Scene({ scrollData, ...props }) {
                             rotation={[0, Math.PI / 4, 0]}
                             scale={28}
 
-                            // 🔥 TEXT: Flipped offset to positive 48 so it floats in the hallway center
                             textOffset={[-18, 6, -16]}
                             textRotation={[0, -Math.PI / 4, 0]}
                         />
@@ -227,8 +226,8 @@ export default function Scene({ scrollData, ...props }) {
                         const zStart = 100;
                         const zEnd = -2000;
                         const step = 100;
-                        const cameraX = -6.17;
-                        const xOffset = 2;
+                        const cameraX = isMobile ? -3 : -6.17;
+                        const xOffset = isMobile ? 6 : 2;
 
                         for (let z = zStart; z >= zEnd; z -= step) {
                             pillarItems.push(
@@ -241,7 +240,7 @@ export default function Scene({ scrollData, ...props }) {
                             );
                         }
                         return pillarItems;
-                    }, [nodes])}
+                    }, [nodes, isMobile])}
 
                     <group name="throne_of_pearls" position={[-3.8, 32.27, -2300]} scale={4.46}>
                         <group rotation={[-Math.PI / 2, 0, 0]}>
