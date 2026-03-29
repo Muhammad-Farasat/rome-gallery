@@ -199,7 +199,7 @@ function EmperorStatue({
                         }}>{name}</h1>
                         <p style={{
                             fontSize: isMobile ? '8px' : '1.4rem',
-                            color: '#eee',
+                            color: '#fff',
                             fontStyle: 'italic',
                             marginTop: '2px',
                             maxWidth: isMobile ? '140px' : '400px',
@@ -207,7 +207,7 @@ function EmperorStatue({
                         }}>{quote}</p>
                         <p style={{
                             fontSize: isMobile ? '8px' : '0.9rem',
-                            color: '#ccc',
+                            color: '#fff',
                             marginTop: '5px',
                             maxWidth: isMobile ? '130px' : '350px',
                             fontWeight: 'normal',

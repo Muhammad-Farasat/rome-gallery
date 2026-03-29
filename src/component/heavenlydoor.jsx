@@ -62,15 +62,15 @@ function HeavenlyDoor({ scrollData }) {
             </mesh>
 
             <group ref={leftDoor} position={[-7.5, 0, 0]}>
-                <mesh position={[-11, isMobile ? 11.7 : 2.6, 0]} castShadow>
-                    <boxGeometry args={[38, isMobile ? 40 : 22, 0]} />
+                <mesh position={[-9, isMobile ? 11.7 : 2.5, 0]} castShadow>
+                    <boxGeometry args={[34, isMobile ? 40 : 21, 0]} />
                     <meshStandardMaterial map={leftTex} roughness={0.3} />
                 </mesh>
             </group>
 
             <group ref={rightDoor} position={[7.5, 0, 0]}>
-                <mesh position={[12, isMobile ? 11.7 : 2.6, 0]} castShadow>
-                    <boxGeometry args={[38, isMobile ? 40 : 22, 0]} />
+                <mesh position={[10, isMobile ? 11.7 : 2.5, 0]} castShadow>
+                    <boxGeometry args={[34, isMobile ? 40 : 21, 0]} />
                     <meshStandardMaterial map={rightTex} roughness={0.3} />
                 </mesh>
             </group>

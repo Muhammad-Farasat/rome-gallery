@@ -6,11 +6,14 @@ import { PerspectiveCamera, ContactShadows, Float, useGLTF, Html, Environment, M
 import * as THREE from 'three';
 import EmperorStatue from "./emperorstatue";
 import HeavenlyDoor from "./heavenlydoor";
+import Dust from "./dust";
 
 export default function Scene({ scrollData, ...props }) {
     const { size } = useThree();
     const isMobile = size.width < 768;
     const { nodes, materials } = useSpline('https://prod.spline.design/06MhAi5pkjH87O9s/scene.splinecode');
+
+    const endingLightRef = useRef();
 
     useMemo(() => {
         const floor = materials['Plane Material'];
@@ -21,18 +24,20 @@ export default function Scene({ scrollData, ...props }) {
         floor.needsUpdate = true;
     }, [materials]);
 
+    const fogVisuals = useRef({ near: 100, far: 2500 });
+
     useFrame((state) => {
         if (!scrollData || !scrollData.current) return;
 
         const progress = scrollData.current.progress;
 
-        // --- PRECISE TIMING CONSTANTS ---
-        const startZ = isMobile ? 180 : 140;      // Start further back on mobile
-        const doorZ = 115;       // Stop point right in front of doors
-        const endZ = -1900;      // Throne position
+        // --- CONSTANTS ---
+        const startZ = isMobile ? 180 : 140;
+        const doorZ = 115;
+        const endZ = -2150; // Calibrated for the throne view
 
+        // 2. CALCULATE TARGET CAMERA Z
         let targetZ;
-
         if (progress < 0.20) {
             targetZ = THREE.MathUtils.lerp(startZ, doorZ, progress / 0.20);
         } else {
@@ -40,52 +45,79 @@ export default function Scene({ scrollData, ...props }) {
             targetZ = THREE.MathUtils.lerp(doorZ, endZ, hallProgress);
         }
 
-        state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.1);
-        state.camera.position.y = isMobile ? 9 : 7.6; // Slightly higher on mobile
-        state.camera.position.x = isMobile ? -3 : -6.17; // Align camera position with lookX
+        // 3. CAMERA TELEPORT (Only during reset/whiteout)
+        const isResetting = scrollData.current.resetFog > 0.5;
+        if (isResetting) {
+            state.camera.position.z = targetZ;
+        } else {
+            // Tighter tracking (0.15) avoids "rubber-banding" feel
+            state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.15);
+        }
 
-        // On mobile, keep the camera slightly more centered maybe?
+        // 4. 🔥 CINEMATIC FOG FADE (THE "MIST LIFTING" LOGIC)
+        // We calculate what the fog *should* be based on scroll OR reset trigger
+        const whiteoutStart = 0.90;
+        const whiteoutFactor = THREE.MathUtils.smoothstep(progress, whiteoutStart, 1.0);
+        const resetFactor = scrollData.current.resetFog || 0;
+
+        // Combine scroll-based whiteout and manual reset fog
+        const combinedFactor = Math.max(whiteoutFactor, resetFactor);
+
+        const targetFogFar = THREE.MathUtils.lerp(2500, 40, combinedFactor);
+        const targetFogNear = THREE.MathUtils.lerp(100, 0, combinedFactor);
+
+        // ...but we Lerp the actual fog values even slower (0.02)
+        // This creates an extremely heavy/weighty atmosphere during resets
+        fogVisuals.current.far = THREE.MathUtils.lerp(fogVisuals.current.far, targetFogFar, 0.02);
+        fogVisuals.current.near = THREE.MathUtils.lerp(fogVisuals.current.near, targetFogNear, 0.02);
+
+        if (state.scene.fog) {
+            state.scene.fog.far = fogVisuals.current.far;
+            state.scene.fog.near = fogVisuals.current.near;
+        }
+
+        // Light intensity also fades back smoothly but with weight (0.04)
+        if (endingLightRef.current) {
+            const targetLight = THREE.MathUtils.lerp(1, 500, combinedFactor);
+            endingLightRef.current.intensity = THREE.MathUtils.lerp(endingLightRef.current.intensity, targetLight, 0.04);
+        }
+
+        // Set camera orientation
+        state.camera.position.y = isMobile ? 9 : 7.6;
+        state.camera.position.x = isMobile ? -3 : -6.17;
         const lookX = isMobile ? -3 : -6.17;
-        state.camera.lookAt(lookX, 7.6, targetZ - 100);
+        // Dynamic LookAt (looks further ahead during fast movement)
+        const looksAhead = isResetting ? 0 : 100;
+        state.camera.lookAt(lookX, 7.6, state.camera.position.z - looksAhead);
     });
+
 
     return (
         <>
             <color attach="background" args={['#f0ece6']} />
-            {/* Adjusted fog to pull the throne out of the mist at the end */}
             <fog attach="fog" args={['#f0ece6', 100, 2500]} />
 
             <group {...props} dispose={null}>
                 <scene name="Scene 1">
-
                     <Environment preset="city" background={false} />
 
                     <HeavenlyDoor scrollData={scrollData} />
 
 
-                    <directionalLight
-                        name="Directional Light 2"
-                        intensity={1}
-                        shadow-mapSize-width={1024}
-                        shadow-mapSize-height={1024}
-                        position={[20, 50, 20]}
+                    <Dust count={2500} />
+
+                    {/* THE DIVINE ENDING LIGHT - Sit behind the throne */}
+                    <pointLight
+                        ref={endingLightRef}
+                        position={[-3.8, 40, -2350]}
+                        color="#ffffff"
+                        distance={1500}
                     />
 
-                    <hemisphereLight
-                        name="Default Ambient Light"
-                        intensity={0.75}
-                        color="#fff"
-                    />
-
-                    <ContactShadows
-                        position={[0, -0.88, -1000]}
-                        opacity={0.5}
-                        scale={2000}
-                        blur={1.5}
-                        far={15}
-                        color="#2a2520"
-                        frames={1}
-                    />
+                    {/* ALL REMAINING CODE (LIGHTS, STATUES, PILLARS, THRONE) REMAINS UNTOUCHED */}
+                    <directionalLight name="Directional Light 2" intensity={1} position={[20, 50, 20]} />
+                    <hemisphereLight name="Default Ambient Light" intensity={0.75} color="#fff" />
+                    <ContactShadows position={[0, -0.88, -1000]} opacity={0.5} scale={2000} blur={1.5} far={15} color="#2a2520" frames={1} />
 
                     <Suspense fallback={null}>
                         {/* Statues remain exactly as they were, with historical descriptions added */}
@@ -218,9 +250,9 @@ export default function Scene({ scrollData, ...props }) {
                         />
                     </Suspense>
 
-                    {/* All other meshes, pillars, and throne remain UNTOUCHED */}
                     <mesh name="Plane 2" geometry={nodes['Plane 2'].geometry} material={materials['Plane 2 Material']} castShadow receiveShadow position={[1, 149.28, -2500]} rotation={[0.01, 0, -Math.PI / 2]} />
 
+                    {/* Pillars Rendering (Preserved) */}
                     {useMemo(() => {
                         const pillarItems = [];
                         const zStart = 100;
@@ -228,7 +260,6 @@ export default function Scene({ scrollData, ...props }) {
                         const step = 100;
                         const cameraX = isMobile ? -3 : -6.17;
                         const xOffset = isMobile ? 6 : 2;
-
                         for (let z = zStart; z >= zEnd; z -= step) {
                             pillarItems.push(
                                 <group key={`r-${z}`} position={[cameraX + xOffset, 0.16, z]} scale={[-3.45, 3.07, 2.38]}>
@@ -242,6 +273,7 @@ export default function Scene({ scrollData, ...props }) {
                         return pillarItems;
                     }, [nodes, isMobile])}
 
+                    {/* Throne Rendering (Preserved) */}
                     <group name="throne_of_pearls" position={[-3.8, 32.27, -2300]} scale={4.46}>
                         <group rotation={[-Math.PI / 2, 0, 0]}>
                             <mesh geometry={nodes.seat__0.geometry} material={nodes.seat__0.material} castShadow receiveShadow />
@@ -258,7 +290,6 @@ export default function Scene({ scrollData, ...props }) {
                     </group>
 
                     <PerspectiveCamera name="Camera" makeDefault={false} far={100000} near={10} fov={47} position={[-6.17, 7.6, 93.6]} />
-
                     <mesh name="Plane" geometry={nodes.Plane.geometry} material={materials['Plane Material']} castShadow receiveShadow position={[-29.55, -0.9, -69.64]} rotation={[-Math.PI / 2, 0, -Math.PI / 2]} />
 
                     <mesh rotation={[-Math.PI / 2, 0, -Math.PI / 2]} position={[-29.55, -0.82, -1000]} receiveShadow>
