@@ -1,34 +1,52 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 export default function SmoothScroll({ children }) {
+    const lenisRef = useRef(null);
+
     useEffect(() => {
-        // 1. Initialize Lenis
+        // 1. Initialize Lenis (starts stopped — gate must open first)
         const lenis = new Lenis({
-            duration: 2.2,      // Increased from 1.5 (longer glide)
-            lerp: 0.05,         // Decreased from 0.1 (makes it feel heavier/slower)
+            duration: 2.2,
+            lerp: 0.05,
             smoothWheel: true,
-            wheelMultiplier: 0.8, // Lowers the "strength" of a single scroll wheel click
+            wheelMultiplier: 0.8,
+            autoStart: false,
         });
+
+        lenisRef.current = lenis;
+
+        // Start in stopped state
+        lenis.stop();
 
         // 2. Sync ScrollTrigger with Lenis
         lenis.on("scroll", ScrollTrigger.update);
 
         // 3. Connect GSAP ticker to Lenis
-        gsap.ticker.add((time) => {
+        const rafCallback = (time) => {
             lenis.raf(time * 1000);
-        });
+        };
+        gsap.ticker.add(rafCallback);
 
         // 4. Disable lag smoothing for instant 3D response
         gsap.ticker.lagSmoothing(0);
 
+        // 5. Listen for the gate-opened event from page.jsx
+        const handleGateOpen = () => {
+            if (lenisRef.current) {
+                lenisRef.current.start();
+            }
+        };
+        window.addEventListener("gate-opened", handleGateOpen);
+
         return () => {
+            window.removeEventListener("gate-opened", handleGateOpen);
             lenis.destroy();
-            gsap.ticker.remove(lenis.raf);
+            gsap.ticker.remove(rafCallback);
         };
     }, []);
 

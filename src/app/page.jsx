@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
 import Scene from "@/component/scene";
 import gsap from "gsap";
@@ -8,6 +8,75 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 export default function Home() {
   const scrollData = useRef({ progress: 0, resetFog: 0 });
   const container = useRef();
+  const audioRef = useRef(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [gateOpen, setGateOpen] = useState(false);
+
+  // Initialize audio element
+  useEffect(() => {
+    const audio = new Audio("/bg_music.mp3");
+    audio.loop = true;
+    audio.volume = 0.4;
+    audioRef.current = audio;
+
+    // Lock scroll until gate is opened
+    if (!gateOpen) {
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle entering the experience
+  const handleEnter = useCallback(() => {
+    setGateOpen(true);
+    document.body.style.overflow = "";
+
+    // Tell SmoothScroll (Lenis) to start accepting scroll
+    window.dispatchEvent(new Event("gate-opened"));
+
+    // Fade out the gate overlay
+    gsap.to("#gate-overlay", {
+      opacity: 0,
+      duration: 2.0,
+      ease: "power2.inOut",
+      onComplete: () => {
+        const el = document.getElementById("gate-overlay");
+        if (el) el.style.display = "none";
+      },
+    });
+
+    // Start music if enabled
+    if (soundEnabled && audioRef.current) {
+      audioRef.current.volume = 0;
+      audioRef.current.play().catch(() => {});
+      gsap.to(audioRef.current, { volume: 0.4, duration: 3.0, ease: "power2.inOut" });
+    }
+  }, [soundEnabled]);
+
+  // Sync audio volume with scroll progress (fade during whiteout)
+  useEffect(() => {
+    let raf;
+    const syncVolume = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        const progress = scrollData.current.progress || 0;
+        const resetFog = scrollData.current.resetFog || 0;
+        // Fade volume down during whiteout (>85%) or reset
+        const whiteoutFade = progress > 0.85 ? 1 - ((progress - 0.85) / 0.15) : 1;
+        const resetFade = 1 - resetFog;
+        const targetVol = Math.max(0, Math.min(0.4, 0.4 * Math.min(whiteoutFade, resetFade)));
+        audioRef.current.volume += (targetVol - audioRef.current.volume) * 0.05;
+      }
+      raf = requestAnimationFrame(syncVolume);
+    };
+    if (gateOpen) raf = requestAnimationFrame(syncVolume);
+    return () => cancelAnimationFrame(raf);
+  }, [gateOpen]);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -28,8 +97,8 @@ export default function Home() {
         opacity: 1,
         scrollTrigger: {
           trigger: container.current,
-          start: "92% top",
-          end: "98% top",
+          start: "88% top",
+          end: "96% top",
           scrub: true,
         },
       }
@@ -57,7 +126,7 @@ export default function Home() {
           gsap.to(scrollData.current, {
             resetFog: 0,
             duration: 5.0,
-            ease: "power3.inOut", // Changed to inOut for even smoother lift
+            ease: "power3.inOut",
             onComplete: () => {
               ScrollTrigger.getAll().forEach(t => t.enable());
               ScrollTrigger.refresh();
@@ -68,8 +137,167 @@ export default function Home() {
     });
   };
 
+  // Toggle sound at any time
+  const toggleSound = useCallback(() => {
+    setSoundEnabled(prev => {
+      const next = !prev;
+      if (audioRef.current) {
+        if (next) {
+          audioRef.current.play().catch(() => {});
+          gsap.to(audioRef.current, { volume: 0.4, duration: 1.0 });
+        } else {
+          gsap.to(audioRef.current, {
+            volume: 0,
+            duration: 0.5,
+            onComplete: () => audioRef.current?.pause(),
+          });
+        }
+      }
+      return next;
+    });
+  }, []);
+
   return (
     <main ref={container} className="relative bg-[#f8f5f0] font-['Times_New_Roman'] serif overflow-x-hidden">
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* GATE OVERLAY — Sound Toggle + Enter */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      <div
+        id="gate-overlay"
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center"
+        style={{
+          background: "radial-gradient(ellipse at center, rgba(26,22,16,0.85) 0%, rgba(10,8,5,0.97) 100%)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        {/* Decorative Top Line */}
+        <div className="absolute top-12 left-1/2 -translate-x-1/2 flex items-center gap-4 opacity-30">
+          <div className="w-16 h-[1px] bg-gradient-to-r from-transparent to-[#D4AF37]" />
+          <div className="w-1.5 h-1.5 bg-[#D4AF37] rotate-45" />
+          <div className="w-16 h-[1px] bg-gradient-to-l from-transparent to-[#D4AF37]" />
+        </div>
+
+        {/* Latin Subtitle */}
+        <p className="text-[#D4AF37]/40 text-xs tracking-[0.5em] uppercase mb-6 font-serif">
+          Senatus Populusque Romanus
+        </p>
+
+        {/* Title */}
+        <h1 className="text-[#D4AF37] text-5xl md:text-7xl font-serif tracking-[0.3em] mb-2 text-center leading-tight select-none"
+          style={{ textShadow: "0 0 60px rgba(212,175,55,0.15)" }}
+        >
+          ROME
+        </h1>
+        <p className="text-[#D4AF37]/25 text-lg tracking-[0.6em] uppercase font-serif mb-14">
+          Eternal Glory
+        </p>
+
+        {/* Sound Toggle */}
+        <div className="flex flex-col items-center gap-5 mb-12">
+          <p className="text-[#a09880] text-sm tracking-[0.2em] uppercase">
+            Experience with Sound
+          </p>
+
+          <button
+            onClick={() => setSoundEnabled(prev => !prev)}
+            className="group relative flex items-center gap-4 px-8 py-3 border border-[#D4AF37]/30 rounded-sm transition-all duration-500 hover:border-[#D4AF37]/60"
+            style={{ background: "rgba(212,175,55,0.03)" }}
+          >
+            {/* Speaker Icon */}
+            <svg
+              width="24" height="24" viewBox="0 0 24 24" fill="none"
+              className="text-[#D4AF37] transition-all duration-300"
+              stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" opacity="0.2" />
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              {soundEnabled ? (
+                <>
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                  <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                </>
+              ) : (
+                <>
+                  <line x1="23" y1="9" x2="17" y2="15" />
+                  <line x1="17" y1="9" x2="23" y2="15" />
+                </>
+              )}
+            </svg>
+
+            <span className="text-[#D4AF37] tracking-[0.15em] uppercase text-sm font-serif">
+              {soundEnabled ? "Sound On" : "Sound Off"}
+            </span>
+
+            {/* Glow indicator */}
+            <div
+              className="w-2 h-2 rounded-full transition-all duration-500"
+              style={{
+                background: soundEnabled ? "#D4AF37" : "#555",
+                boxShadow: soundEnabled ? "0 0 8px rgba(212,175,55,0.6)" : "none",
+              }}
+            />
+          </button>
+        </div>
+
+        {/* Enter Button */}
+        <button
+          onClick={handleEnter}
+          className="group relative px-16 py-5 overflow-hidden border border-[#D4AF37]/50 text-[#D4AF37] tracking-[0.4em] uppercase transition-all duration-700 hover:text-[#1a1610] hover:border-[#D4AF37] font-serif text-sm"
+        >
+          <span className="relative z-10">Enter the Empire</span>
+          <div className="absolute inset-0 z-0 bg-[#D4AF37] translate-y-full transition-transform duration-700 group-hover:translate-y-0" />
+        </button>
+
+        {/* Scroll hint */}
+        <div className="absolute bottom-10 flex flex-col items-center gap-2 opacity-20">
+          <p className="text-[#D4AF37] text-[10px] tracking-[0.3em] uppercase">
+            Scroll to Explore
+          </p>
+          <svg width="16" height="24" viewBox="0 0 16 24" className="text-[#D4AF37] animate-bounce">
+            <path d="M8 4 L8 18 M3 14 L8 19 L13 14" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          </svg>
+        </div>
+
+        {/* Decorative Bottom Line */}
+        <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-4 opacity-20">
+          <div className="w-24 h-[1px] bg-gradient-to-r from-transparent to-[#D4AF37]/50" />
+          <div className="text-[#D4AF37]/30 text-[10px] tracking-[0.3em] font-serif">SPQR</div>
+          <div className="w-24 h-[1px] bg-gradient-to-l from-transparent to-[#D4AF37]/50" />
+        </div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════ */}
+      {/* Persistent Sound Toggle (appears after gate opens) */}
+      {/* ═══════════════════════════════════════════════════════ */}
+      {gateOpen && (
+        <button
+          onClick={toggleSound}
+          className="fixed top-6 left-6 z-[70] flex items-center gap-2 px-3 py-2 border border-[#D4AF37]/20 rounded-sm transition-all duration-500 hover:border-[#D4AF37]/50 group"
+          style={{ background: "rgba(240,236,230,0.6)", backdropFilter: "blur(4px)" }}
+          title={soundEnabled ? "Mute" : "Unmute"}
+        >
+          <svg
+            width="18" height="18" viewBox="0 0 24 24" fill="none"
+            className="text-[#D4AF37]/70 group-hover:text-[#D4AF37] transition-colors"
+            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+          >
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+            {soundEnabled ? (
+              <>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+              </>
+            ) : (
+              <>
+                <line x1="23" y1="9" x2="17" y2="15" />
+                <line x1="17" y1="9" x2="23" y2="15" />
+              </>
+            )}
+          </svg>
+        </button>
+      )}
+
       <div className="fixed inset-0 h-screen w-full z-0">
         <Canvas shadows camera={{ position: [-6.17, 7.6, 160], fov: 47 }}>
           <Scene scrollData={scrollData} />
@@ -92,7 +320,7 @@ export default function Home() {
       <div
         id="final-screen"
         className="fixed inset-0 z-50 flex flex-col items-center justify-center opacity-0 pointer-events-none"
-        style={{ background: 'transparent' }} // Let the 3D white-out be the background
+        style={{ background: 'transparent' }}
       >
 
         <div className="text-center pointer-events-auto">

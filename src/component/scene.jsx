@@ -34,15 +34,21 @@ export default function Scene({ scrollData, ...props }) {
         // --- CONSTANTS ---
         const startZ = isMobile ? 180 : 140;
         const doorZ = 115;
-        const endZ = -2150; // Calibrated for the throne view
 
         // 2. CALCULATE TARGET CAMERA Z
+        const hallwayEnd = 0.80; // Columns end at 80% progress
+        const columnsEndZ = -1900;
+        const finalZ = -1950; // Keeps camera further from throne (-2300)
+
         let targetZ;
         if (progress < 0.20) {
             targetZ = THREE.MathUtils.lerp(startZ, doorZ, progress / 0.20);
+        } else if (progress < hallwayEnd) {
+            const hallProgress = (progress - 0.20) / (hallwayEnd - 0.20);
+            targetZ = THREE.MathUtils.lerp(doorZ, columnsEndZ, hallProgress);
         } else {
-            const hallProgress = (progress - 0.20) / 0.80;
-            targetZ = THREE.MathUtils.lerp(doorZ, endZ, hallProgress);
+            const finalProgress = (progress - hallwayEnd) / (1.0 - hallwayEnd);
+            targetZ = THREE.MathUtils.lerp(columnsEndZ, finalZ, finalProgress);
         }
 
         // 3. CAMERA TELEPORT (Only during reset/whiteout)
@@ -56,7 +62,7 @@ export default function Scene({ scrollData, ...props }) {
 
         // 4. 🔥 CINEMATIC FOG FADE (THE "MIST LIFTING" LOGIC)
         // We calculate what the fog *should* be based on scroll OR reset trigger
-        const whiteoutStart = 0.90;
+        const whiteoutStart = 0.70; // Triggers as pillars end
         const whiteoutFactor = THREE.MathUtils.smoothstep(progress, whiteoutStart, 1.0);
         const resetFactor = scrollData.current.resetFog || 0;
 
@@ -66,10 +72,9 @@ export default function Scene({ scrollData, ...props }) {
         const targetFogFar = THREE.MathUtils.lerp(2500, 40, combinedFactor);
         const targetFogNear = THREE.MathUtils.lerp(100, 0, combinedFactor);
 
-        // ...but we Lerp the actual fog values even slower (0.02)
-        // This creates an extremely heavy/weighty atmosphere during resets
-        fogVisuals.current.far = THREE.MathUtils.lerp(fogVisuals.current.far, targetFogFar, 0.02);
-        fogVisuals.current.near = THREE.MathUtils.lerp(fogVisuals.current.near, targetFogNear, 0.02);
+        // Lerp fog values — 0.04 for visible divine glow buildup
+        fogVisuals.current.far = THREE.MathUtils.lerp(fogVisuals.current.far, targetFogFar, 0.04);
+        fogVisuals.current.near = THREE.MathUtils.lerp(fogVisuals.current.near, targetFogNear, 0.04);
 
         if (state.scene.fog) {
             state.scene.fog.far = fogVisuals.current.far;
@@ -78,8 +83,8 @@ export default function Scene({ scrollData, ...props }) {
 
         // Light intensity also fades back smoothly but with weight (0.04)
         if (endingLightRef.current) {
-            const targetLight = THREE.MathUtils.lerp(1, 500, combinedFactor);
-            endingLightRef.current.intensity = THREE.MathUtils.lerp(endingLightRef.current.intensity, targetLight, 0.04);
+            const targetLight = THREE.MathUtils.lerp(1, 2000, combinedFactor);
+            endingLightRef.current.intensity = THREE.MathUtils.lerp(endingLightRef.current.intensity, targetLight, 0.06);
         }
 
         // Set camera orientation
@@ -106,12 +111,12 @@ export default function Scene({ scrollData, ...props }) {
 
                     <Dust count={2500} />
 
-                    {/* THE DIVINE ENDING LIGHT - Sit behind the throne */}
+                    {/* THE DIVINE ENDING LIGHT - Sits behind the throne */}
                     <pointLight
                         ref={endingLightRef}
-                        position={[-3.8, 40, -2350]}
-                        color="#ffffff"
-                        distance={1500}
+                        position={[-3.8, 50, -2050]}
+                        color="#fffaf0"
+                        distance={2000}
                     />
 
                     {/* ALL REMAINING CODE (LIGHTS, STATUES, PILLARS, THRONE) REMAINS UNTOUCHED */}
@@ -198,7 +203,7 @@ export default function Scene({ scrollData, ...props }) {
                             name="Constantine"
                             quote="In this sign, conquer."
                             description="The first Emperor to convert to Christianity and the founder of Constantinople."
-                            position={[-20, -9, -1100]}
+                            position={[-20, -9, -860]}
                             rotation={[0, Math.PI / 6, 0]}
                             scale={8}
                             textOffset={[35, 12, 0]}
@@ -212,7 +217,7 @@ export default function Scene({ scrollData, ...props }) {
                             name="Vespasian"
                             quote="Money has no smell."
                             description="Founder of the Flavian dynasty who stabilized Rome and began the Colosseum."
-                            position={[10, 0, -1250]}
+                            position={[10, 0, -1050]}
                             rotation={[0, -Math.PI / 6, 0]}
                             scale={38}
                             textOffset={[-35, 3, 0]}
@@ -226,7 +231,7 @@ export default function Scene({ scrollData, ...props }) {
                             name="Nero"
                             quote="Qualis artifex pereo."
                             description="Infamous for his artistic vanity and the collapse of the Julio-Claudian dynasty."
-                            position={[-22, 0, -1400]}
+                            position={[-22, 0, -1200]}
                             rotation={[0, Math.PI / 6, 0]}
                             scale={42}
                             textOffset={[35, 14, 0]}
@@ -240,7 +245,7 @@ export default function Scene({ scrollData, ...props }) {
                             name="Caligula"
                             quote="Let them hate, so long as they fear."
                             description="A young ruler remembered for his erratic behavior and extreme authoritarianism."
-                            position={[15, 0, -1700]}
+                            position={[15, 0, -1350]}
                             rotation={[0, -Math.PI / 6, 0]}
                             scale={0.05}
                             textOffset={[-35, 16, 0]}
@@ -250,13 +255,13 @@ export default function Scene({ scrollData, ...props }) {
                         />
                     </Suspense>
 
-                    <mesh name="Plane 2" geometry={nodes['Plane 2'].geometry} material={materials['Plane 2 Material']} castShadow receiveShadow position={[1, 149.28, -2500]} rotation={[0.01, 0, -Math.PI / 2]} />
+                    <mesh name="Plane 2" geometry={nodes['Plane 2'].geometry} material={materials['Plane 2 Material']} castShadow receiveShadow position={[1, 149.28, -2200]} rotation={[0.01, 0, -Math.PI / 2]} />
 
                     {/* Pillars Rendering (Preserved) */}
                     {useMemo(() => {
                         const pillarItems = [];
                         const zStart = 100;
-                        const zEnd = -2000;
+                        const zEnd = -1600;
                         const step = 100;
                         const cameraX = isMobile ? -3 : -6.17;
                         const xOffset = isMobile ? 6 : 2;
@@ -274,7 +279,7 @@ export default function Scene({ scrollData, ...props }) {
                     }, [nodes, isMobile])}
 
                     {/* Throne Rendering (Preserved) */}
-                    <group name="throne_of_pearls" position={[-3.8, 32.27, -2300]} scale={4.46}>
+                    <group name="throne_of_pearls" position={[-3.8, 32.27, -2000]} scale={4.46}>
                         <group rotation={[-Math.PI / 2, 0, 0]}>
                             <mesh geometry={nodes.seat__0.geometry} material={nodes.seat__0.material} castShadow receiveShadow />
                             <mesh geometry={nodes.armrests__0.geometry} material={nodes.armrests__0.material} castShadow receiveShadow />
@@ -283,7 +288,7 @@ export default function Scene({ scrollData, ...props }) {
                         </group>
                     </group>
 
-                    <group name="Stair Base" position={[-16.16, 15.37, -2300]}>
+                    <group name="Stair Base" position={[-16.16, 15.37, -2000]}>
                         <mesh name="Cube 3" geometry={nodes['Cube 3'].geometry} material={materials['Cube 3 Material']} castShadow receiveShadow position={[0, -14.37, 60.57]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={1} />
                         <mesh name="Cube 2" geometry={nodes['Cube 2'].geometry} material={materials['Cube 2 Material']} castShadow receiveShadow position={[0, -9.42, 38.68]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={1} />
                         <mesh name="Cube" geometry={nodes.Cube.geometry} material={materials['Cube Material']} castShadow receiveShadow position={[0, 0, -21.73]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={1} />

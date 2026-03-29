@@ -181,7 +181,7 @@ function EmperorStatue({
                     <div ref={htmlRef} style={{
                         opacity: 0,
                         transition: 'opacity 0.3s ease-out',
-                        width: isMobile ? '100px' : '600px',
+                        width: isMobile ? '100px' : '300px',
                         pointerEvents: 'none',
                         color: 'white',
                         textAlign: 'left',
