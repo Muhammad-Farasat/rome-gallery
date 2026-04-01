@@ -16,6 +16,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Rome Gallery",
   description: "Roman Statues Gallery.",
+  icons: {
+    icon: "/icon.png?v=1",
+    shortcut: "/icon.png?v=1",
+    apple: "/icon.png?v=1",
+  },
 };
 
 export default function RootLayout({

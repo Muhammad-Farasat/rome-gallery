@@ -1,6 +1,7 @@
 "use client";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Canvas } from "@react-three/fiber";
+import { useProgress } from "@react-three/drei";
 import Scene from "@/component/scene";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -11,6 +12,10 @@ export default function Home() {
   const audioRef = useRef(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [gateOpen, setGateOpen] = useState(false);
+
+  // 3D Asset Loading Progress
+  const { progress: assetsProgress } = useProgress();
+  const assetsLoaded = assetsProgress === 100;
 
   // Initialize audio element
   useEffect(() => {
@@ -34,6 +39,7 @@ export default function Home() {
 
   // Handle entering the experience
   const handleEnter = useCallback(() => {
+    if (!assetsLoaded) return;
     setGateOpen(true);
     document.body.style.overflow = "";
 
@@ -57,7 +63,7 @@ export default function Home() {
       audioRef.current.play().catch(() => { });
       gsap.to(audioRef.current, { volume: 0.4, duration: 3.0, ease: "power2.inOut" });
     }
-  }, [soundEnabled]);
+  }, [soundEnabled, assetsLoaded]);
 
   // Sync audio volume with scroll progress (fade during whiteout)
   useEffect(() => {
@@ -116,7 +122,7 @@ export default function Home() {
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
 
-  }, []);
+  }, [gateOpen]);
 
   // 🔥 THE CINEMATIC RESET (MAXIMUM SLOW & TRANSCENDENT)
   const handleRestart = () => {
@@ -253,24 +259,31 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Enter Button */}
+        {/* Enter Button with Loading State */}
         <button
           onClick={handleEnter}
-          className="group relative px-16 py-5 overflow-hidden border border-[#D4AF37]/50 text-[#D4AF37] tracking-[0.4em] uppercase transition-all duration-700 hover:text-[#1a1610] hover:border-[#D4AF37] font-serif text-sm"
+          disabled={!assetsLoaded}
+          className={`group relative px-16 py-5 overflow-hidden border border-[#D4AF37]/50 text-[#D4AF37] tracking-[0.4em] uppercase transition-all duration-700 font-serif text-sm ${!assetsLoaded ? 'opacity-50 cursor-wait' : 'hover:text-[#1a1610] hover:border-[#D4AF37]'}`}
         >
-          <span className="relative z-10">Enter the Empire</span>
-          <div className="absolute inset-0 z-0 bg-[#D4AF37] translate-y-full transition-transform duration-700 group-hover:translate-y-0" />
+          <span className="relative z-10">
+            {assetsLoaded ? "Enter the Empire" : `Loading... ${Math.round(assetsProgress)}%`}
+          </span>
+          {assetsLoaded && (
+            <div className="absolute inset-0 z-0 bg-[#D4AF37] translate-y-full transition-transform duration-700 group-hover:translate-y-0" />
+          )}
         </button>
 
         {/* Scroll hint */}
-        <div className="absolute bottom-10 flex flex-col items-center gap-2 opacity-20">
-          <p className="text-[#D4AF37] text-[10px] tracking-[0.3em] uppercase">
-            Scroll to Explore
-          </p>
-          <svg width="16" height="24" viewBox="0 0 16 24" className="text-[#D4AF37] animate-bounce">
-            <path d="M8 4 L8 18 M3 14 L8 19 L13 14" stroke="currentColor" strokeWidth="1.5" fill="none" />
-          </svg>
-        </div>
+        {assetsLoaded && (
+          <div className="absolute bottom-10 flex flex-col items-center gap-2 opacity-20">
+            <p className="text-[#D4AF37] text-[10px] tracking-[0.3em] uppercase">
+              Scroll to Explore
+            </p>
+            <svg width="16" height="24" viewBox="0 0 16 24" className="text-[#D4AF37] animate-bounce">
+              <path d="M8 4 L8 18 M3 14 L8 19 L13 14" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            </svg>
+          </div>
+        )}
 
         {/* Decorative Bottom Line */}
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-4 opacity-20">

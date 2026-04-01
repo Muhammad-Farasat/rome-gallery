@@ -113,7 +113,7 @@ export default function Scene({ scrollData, ...props }) {
                     <HeavenlyDoor scrollData={scrollData} />
 
 
-                    <Dust count={2500} />
+                    <Dust count={500} />
 
                     {/* THE DIVINE ENDING LIGHT - Sits behind the throne */}
                     <pointLight
