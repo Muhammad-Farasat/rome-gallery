@@ -25,9 +25,12 @@ function EmperorStatue({
     const isMobile = size.width > 0 && size.width < 768;
     const mobileScaleFactor = isMobile ? 0.65 : 1;
 
-    const { scene } = useGLTF(url);
+    // const { scene } = useGLTF(url);
+    const { scene } = useGLTF(url, 'https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
     const clonedScene = useMemo(() => scene.clone(), [scene]);
     const htmlRef = useRef();
+
+
 
     // --- INTERACTIVE ROTATION REFS ---
     const interactiveGroupRef = useRef();

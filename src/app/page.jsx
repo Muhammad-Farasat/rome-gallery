@@ -54,7 +54,7 @@ export default function Home() {
     // Start music if enabled
     if (soundEnabled && audioRef.current) {
       audioRef.current.volume = 0;
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(() => { });
       gsap.to(audioRef.current, { volume: 0.4, duration: 3.0, ease: "power2.inOut" });
     }
   }, [soundEnabled]);
@@ -81,7 +81,7 @@ export default function Home() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const tl = gsap.to(scrollData.current, {
+    gsap.to(scrollData.current, {
       progress: 1,
       scrollTrigger: {
         trigger: container.current,
@@ -89,20 +89,33 @@ export default function Home() {
         end: "bottom bottom",
         scrub: 0.1,
       },
+      onUpdate: () => {
+        const progress = scrollData.current.progress;
+        const finalScreen = document.getElementById("final-screen");
+        if (finalScreen) {
+
+          let op = (progress - 0.80) / (0.92 - 0.80);
+          op = Math.max(0, Math.min(1, op));
+
+          finalScreen.style.opacity = op.toString();
+          finalScreen.style.pointerEvents = op > 0.8 ? "auto" : "none";
+          finalScreen.style.transform = `scale(${0.95 + (op * 0.05)})`
+
+          if (op >= 1) {
+
+            document.body.style.overflow = "hidden";
+          } else {
+            if (gateOpen) document.body.style.overflow = "";
+          }
+        }
+
+      }
     });
 
-    gsap.fromTo("#final-screen",
-      { opacity: 0 },
-      {
-        opacity: 1,
-        scrollTrigger: {
-          trigger: container.current,
-          start: "88% top",
-          end: "96% top",
-          scrub: true,
-        },
-      }
-    );
+    return () => {
+      ScrollTrigger.getAll().forEach(t => t.kill());
+    };
+
   }, []);
 
   // 🔥 THE CINEMATIC RESET (MAXIMUM SLOW & TRANSCENDENT)
@@ -143,7 +156,7 @@ export default function Home() {
       const next = !prev;
       if (audioRef.current) {
         if (next) {
-          audioRef.current.play().catch(() => {});
+          audioRef.current.play().catch(() => { });
           gsap.to(audioRef.current, { volume: 0.4, duration: 1.0 });
         } else {
           gsap.to(audioRef.current, {
@@ -299,7 +312,7 @@ export default function Home() {
       )}
 
       <div className="fixed inset-0 h-screen w-full z-0">
-        <Canvas shadows camera={{ position: [-6.17, 7.6, 160], fov: 47 }}>
+        <Canvas shadows camera={{ position: [-6.17, 7.6, 115], fov: 47 }}>
           <Scene scrollData={scrollData} />
         </Canvas>
       </div>
@@ -322,19 +335,17 @@ export default function Home() {
         className="fixed inset-0 z-50 flex flex-col items-center justify-center opacity-0 pointer-events-none"
         style={{ background: 'transparent' }}
       >
-
         <div className="text-center pointer-events-auto">
-          {/* Majestic Large Text */}
-          <h1 className="text-[12vw] text-[#D4AF37] opacity-20 leading-none tracking-[0.4em] select-none font-serif mb-4">
+          {/* 🔥 REMOVED opacity-20 and added a subtle glow */}
+          <h1 className="text-[12vw] text-[#D4AF37] leading-none tracking-[0.4em] select-none font-serif mb-4"
+            style={{ textShadow: "0 0 40px rgba(212,175,55,0.3)" }}>
             FINIS
           </h1>
 
-          {/* Roman Quote */}
-          <p className="text-2xl text-gray-500 italic tracking-widest mb-12">
+          <p className="text-2xl text-gray-600 italic tracking-widest mb-12">
             "Rome is not a place, it is an idea."
           </p>
 
-          {/* CTA Button */}
           <button
             onClick={handleRestart}
             className="group relative px-12 py-4 overflow-hidden border border-[#D4AF37] text-[#D4AF37] tracking-[0.3em] uppercase transition-all duration-500 hover:text-white"
@@ -342,14 +353,9 @@ export default function Home() {
             <span className="relative z-10">Relive the Glory</span>
             <div className="absolute inset-0 z-0 bg-[#D4AF37] translate-y-full transition-transform duration-500 group-hover:translate-y-0" />
           </button>
-
-          {/* Small Credits */}
-          <div className="mt-20 opacity-40 text-sm text-gray-400 tracking-[0.2em] uppercase">
-            A Roman Historical Experience
-          </div>
         </div>
       </div>
-      <div className="h-[2500vh] w-full" />
+      <div className="h-[1000vh] w-full" />
     </main>
   );
 }

@@ -36,9 +36,9 @@ export default function Scene({ scrollData, ...props }) {
         const doorZ = 115;
 
         // 2. CALCULATE TARGET CAMERA Z
-        const hallwayEnd = 0.80; // Columns end at 80% progress
-        const columnsEndZ = -1900;
-        const finalZ = -1950; // Keeps camera further from throne (-2300)
+        const hallwayEnd = 0.70;      // hall ends earlier
+        const columnsEndZ = -1400;    // camera stops here — throne is far away
+        const finalZ = -1700; // Keeps camera well back from throne (-1900)
 
         let targetZ;
         if (progress < 0.20) {
@@ -58,33 +58,37 @@ export default function Scene({ scrollData, ...props }) {
         } else {
             // Tighter tracking (0.15) avoids "rubber-banding" feel
             state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.15);
+            // Change to:
+    // targetZ = -1400; 
+
         }
 
         // 4. 🔥 CINEMATIC FOG FADE (THE "MIST LIFTING" LOGIC)
         // We calculate what the fog *should* be based on scroll OR reset trigger
-        const whiteoutStart = 0.70; // Triggers as pillars end
-        const whiteoutFactor = THREE.MathUtils.smoothstep(progress, whiteoutStart, 1.0);
+        const whiteoutStart = 0.70;   // starts exactly when camera stops moving
+        const whiteoutEnd = 0.90;
+        const whiteoutFactor = THREE.MathUtils.smoothstep(progress, whiteoutStart, whiteoutEnd);
         const resetFactor = scrollData.current.resetFog || 0;
 
-        // Combine scroll-based whiteout and manual reset fog
         const combinedFactor = Math.max(whiteoutFactor, resetFactor);
 
-        const targetFogFar = THREE.MathUtils.lerp(2500, 40, combinedFactor);
+        // Fog pulls in closer to create the "White Void"
+        const targetFogFar = THREE.MathUtils.lerp(2500, 30, combinedFactor);
         const targetFogNear = THREE.MathUtils.lerp(100, 0, combinedFactor);
 
-        // Lerp fog values — 0.04 for visible divine glow buildup
-        fogVisuals.current.far = THREE.MathUtils.lerp(fogVisuals.current.far, targetFogFar, 0.04);
-        fogVisuals.current.near = THREE.MathUtils.lerp(fogVisuals.current.near, targetFogNear, 0.04);
+        // Smoothly apply fog changes
+        fogVisuals.current.far = THREE.MathUtils.lerp(fogVisuals.current.far, targetFogFar, 0.08);
+        fogVisuals.current.near = THREE.MathUtils.lerp(fogVisuals.current.near, targetFogNear, 0.08);
 
         if (state.scene.fog) {
             state.scene.fog.far = fogVisuals.current.far;
             state.scene.fog.near = fogVisuals.current.near;
         }
 
-        // Light intensity also fades back smoothly but with weight (0.04)
+        // Light intensity behind the throne blooms out
         if (endingLightRef.current) {
-            const targetLight = THREE.MathUtils.lerp(1, 2000, combinedFactor);
-            endingLightRef.current.intensity = THREE.MathUtils.lerp(endingLightRef.current.intensity, targetLight, 0.06);
+            const targetLight = THREE.MathUtils.lerp(1, 1500, combinedFactor);
+            endingLightRef.current.intensity = THREE.MathUtils.lerp(endingLightRef.current.intensity, targetLight, 0.1);
         }
 
         // Set camera orientation
@@ -127,7 +131,7 @@ export default function Scene({ scrollData, ...props }) {
                     <Suspense fallback={null}>
                         {/* Statues remain exactly as they were, with historical descriptions added */}
                         <EmperorStatue
-                            url="/head_of_augustus.glb"
+                            url="/augustus_opt.glb"
                             name="Augustus"
                             quote="I found Rome a city of bricks and left it a city of marble."
                             description="The founder of the Roman Empire and its first Emperor, establishing the Pax Romana."
@@ -141,7 +145,7 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/caesar.glb"
+                            url="/caesar_opt.glb"
                             name="Caesar"
                             quote="Veni, Vidi, Vici."
                             description="A military genius who expanded the Republic and paved the road for the Imperial era."
@@ -155,7 +159,7 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/trajan.glb"
+                            url="/trajan_opt.glb"
                             name="Trajan"
                             quote="The best of princes."
                             description="Under his rule, the Roman Empire reached its greatest territorial extent in history."
@@ -171,7 +175,7 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/aurelius.glb"
+                            url="/aurelius_opt.glb"
                             name="Aurelius"
                             quote="Our life is what our thoughts make it."
                             description="The Philosopher King and author of 'Meditations', the last of the Five Good Emperors."
@@ -185,7 +189,7 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/hadrian.glb"
+                            url="/hadrian_opt.glb"
                             name="Hadrian"
                             quote="Brick by brick, my citizens."
                             description="A prolific builder who consolidated the empire and rebuilt the majestic Pantheon."
@@ -199,7 +203,7 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/constantine.glb"
+                            url="/constantine_opt.glb"
                             name="Constantine"
                             quote="In this sign, conquer."
                             description="The first Emperor to convert to Christianity and the founder of Constantinople."
@@ -213,7 +217,7 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/emperor_vespasian.glb"
+                            url="/vespasian_opt.glb"
                             name="Vespasian"
                             quote="Money has no smell."
                             description="Founder of the Flavian dynasty who stabilized Rome and began the Colosseum."
@@ -227,35 +231,35 @@ export default function Scene({ scrollData, ...props }) {
                         />
 
                         <EmperorStatue
-                            url="/prince_nero.glb"
+                            url="/nero_opt.glb"
                             name="Nero"
                             quote="Qualis artifex pereo."
                             description="Infamous for his artistic vanity and the collapse of the Julio-Claudian dynasty."
                             position={[-22, 0, -1200]}
                             rotation={[0, Math.PI / 6, 0]}
                             scale={42}
-                            textOffset={[35, 14, 0]}
+                            textOffset={[35, 10, 0]}
                             textRotation={[0, -Math.PI / 6, 0]}
                             podiumOffset={[0, 1, 0]}
                             podiumSize={[20, 2, 20]}
                         />
 
                         <EmperorStatue
-                            url="/the_caligula.glb"
+                            url="/caligula_opt.glb"
                             name="Caligula"
                             quote="Let them hate, so long as they fear."
                             description="A young ruler remembered for his erratic behavior and extreme authoritarianism."
                             position={[15, 0, -1350]}
                             rotation={[0, -Math.PI / 6, 0]}
                             scale={0.05}
-                            textOffset={[-35, 16, 0]}
+                            textOffset={[-35, 10, 0]}
                             textRotation={[0, Math.PI / 6, 0]}
                             podiumOffset={[0, 1, 0]}
                             podiumSize={[20, 2, 20]}
                         />
                     </Suspense>
 
-                    <mesh name="Plane 2" geometry={nodes['Plane 2'].geometry} material={materials['Plane 2 Material']} castShadow receiveShadow position={[1, 149.28, -2200]} rotation={[0.01, 0, -Math.PI / 2]} />
+                    <mesh name="Plane 2" geometry={nodes['Plane 2'].geometry} material={materials['Plane 2 Material']} castShadow receiveShadow position={[1, 149.28, -2000]} rotation={[0.01, 0, -Math.PI / 2]} />
 
                     {/* Pillars Rendering (Preserved) */}
                     {useMemo(() => {
@@ -279,7 +283,7 @@ export default function Scene({ scrollData, ...props }) {
                     }, [nodes, isMobile])}
 
                     {/* Throne Rendering (Preserved) */}
-                    <group name="throne_of_pearls" position={[-3.8, 32.27, -2000]} scale={4.46}>
+                    <group name="throne_of_pearls" position={[-3.8, 32.27, -1900]} scale={4.46}>
                         <group rotation={[-Math.PI / 2, 0, 0]}>
                             <mesh geometry={nodes.seat__0.geometry} material={nodes.seat__0.material} castShadow receiveShadow />
                             <mesh geometry={nodes.armrests__0.geometry} material={nodes.armrests__0.material} castShadow receiveShadow />
@@ -288,7 +292,7 @@ export default function Scene({ scrollData, ...props }) {
                         </group>
                     </group>
 
-                    <group name="Stair Base" position={[-16.16, 15.37, -2000]}>
+                    <group name="Stair Base" position={[-16.16, 15.37, -1900]}>
                         <mesh name="Cube 3" geometry={nodes['Cube 3'].geometry} material={materials['Cube 3 Material']} castShadow receiveShadow position={[0, -14.37, 60.57]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={1} />
                         <mesh name="Cube 2" geometry={nodes['Cube 2'].geometry} material={materials['Cube 2 Material']} castShadow receiveShadow position={[0, -9.42, 38.68]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={1} />
                         <mesh name="Cube" geometry={nodes.Cube.geometry} material={materials['Cube Material']} castShadow receiveShadow position={[0, 0, -21.73]} rotation={[-Math.PI / 2, 0, Math.PI / 2]} scale={1} />
