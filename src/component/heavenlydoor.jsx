@@ -12,7 +12,7 @@ function HeavenlyDoor({ scrollData }) {
     const rightDoor = useRef();
     const portalRef = useRef();
 
-    const baseTex = useTexture('/Door.png');
+    const baseTex = useTexture('/Door.svg');
 
     const leftTex = useMemo(() => {
         const tex = baseTex.clone();
