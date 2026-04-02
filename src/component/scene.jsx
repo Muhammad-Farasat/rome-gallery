@@ -57,7 +57,7 @@ export default function Scene({ scrollData, ...props }) {
             state.camera.position.z = targetZ;
         } else {
             // Tighter tracking (0.15) avoids "rubber-banding" feel
-            state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.15);
+            state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, targetZ, 0.05);
             // Change to:
     // targetZ = -1400; 
 
@@ -152,7 +152,7 @@ export default function Scene({ scrollData, ...props }) {
                             position={[-20, 0, -220]}
                             rotation={[0, Math.PI / 4, 0]}
                             scale={8}
-                            textOffset={isMobile ? [18, 4, 0] : [40, 4, 0]}
+                            textOffset={isMobile ? [18, 4, 0] : [40, 8, 0]}
                             textRotation={[0, -Math.PI / 4, 0]}
                             podiumOffset={[0, 0, 0]}
                             podiumSize={[20, 1, 20]}
@@ -170,7 +170,7 @@ export default function Scene({ scrollData, ...props }) {
                             rotation={[0, Math.PI / 4, 0]}
                             scale={28}
 
-                            textOffset={[-18, 6, -16]}
+                            textOffset={[-20, 6, -16]}
                             textRotation={[0, -Math.PI / 4, 0]}
                         />
 
@@ -182,7 +182,7 @@ export default function Scene({ scrollData, ...props }) {
                             position={[-22, -2, -550]}
                             rotation={[0, Math.PI / 4, 0]}
                             scale={2}
-                            textOffset={[44, 14, 0]}
+                            textOffset={[44, 10, 0]}
                             textRotation={[0, -Math.PI / 4, 0]}
                             podiumOffset={[0, 2, 3]}
                             podiumSize={[20, 1, 20]}
@@ -210,7 +210,7 @@ export default function Scene({ scrollData, ...props }) {
                             position={[-20, -9, -860]}
                             rotation={[0, Math.PI / 6, 0]}
                             scale={8}
-                            textOffset={[35, 12, 0]}
+                            textOffset={[35, 20, 0]}
                             textRotation={[0, -Math.PI / 6, 0]}
                             podiumOffset={[0, 10, 0]}
                             podiumSize={[20, 2, 20]}
@@ -224,7 +224,7 @@ export default function Scene({ scrollData, ...props }) {
                             position={[10, 0, -1050]}
                             rotation={[0, -Math.PI / 6, 0]}
                             scale={38}
-                            textOffset={[-35, 3, 0]}
+                            textOffset={[-35, 8, 0]}
                             textRotation={[0, Math.PI / 6, 0]}
                             podiumOffset={[0, 1, 0]}
                             podiumSize={[20, 2, 20]}

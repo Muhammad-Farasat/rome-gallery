@@ -1,5 +1,5 @@
 "use client";
-import { Suspense, useRef, useMemo, useState } from "react"; // Added useState
+import { Suspense, useRef, useMemo, useState } from "react"; 
 import { useThree, useFrame } from "@react-three/fiber";
 import useSpline from '@splinetool/r3f-spline';
 import { PerspectiveCamera, ContactShadows, Float, useGLTF, Html, Environment, MeshReflectorMaterial } from '@react-three/drei';
@@ -25,21 +25,16 @@ function EmperorStatue({
     const isMobile = size.width > 0 && size.width < 768;
     const mobileScaleFactor = isMobile ? 0.65 : 1;
 
-    // const { scene } = useGLTF(url);
     const { scene } = useGLTF(url, 'https://www.gstatic.com/draco/versioned/decoders/1.5.5/');
     const clonedScene = useMemo(() => scene.clone(), [scene]);
     const htmlRef = useRef();
 
-
-
-    // --- INTERACTIVE ROTATION REFS ---
     const interactiveGroupRef = useRef();
     const [isDragging, setIsDragging] = useState(false);
     const rotationVelocity = useRef(0);
     const currentRotation = useRef(0);
     const lastPointerX = useRef(0);
 
-    // --- EXISTING FITTING LOGIC (Untouched) ---
     const { scaledSize, offsetToBottom } = useMemo(() => {
         const bbox = new THREE.Box3().setFromObject(clonedScene);
         const size = new THREE.Vector3();
@@ -56,17 +51,11 @@ function EmperorStatue({
         };
     }, [clonedScene, scale]);
 
-    // const podiumWidth = scaledSize.x * 1.2;
-    // const podiumDepth = scaledSize.z * 1.2;
-    // const podiumHeight = 12;
-
     const { localOffset } = useMemo(() => {
         if (!clonedScene) return { localOffset: [0, 0, 0] };
         const bbox = new THREE.Box3().setFromObject(clonedScene);
         const center = new THREE.Vector3();
         bbox.getCenter(center);
-        // We want the rotation to happen around the X and Z center, 
-        // but keep the Y (height) so the base stays at 0
         return {
             localOffset: [-center.x * scale, -bbox.min.y * scale, -center.z * scale]
         };
@@ -75,40 +64,42 @@ function EmperorStatue({
     useFrame((state) => {
         if (!htmlRef.current) return;
 
-        // 1. EXISTING SCROLL FADE LOGIC (Untouched)
         const camZ = state.camera.position.z;
         const statueZ = position[2];
         const distance = camZ - statueZ;
         let opacity = 0;
 
-        // Mobile needs to fade out SOONER so it doesn't get huge as we pass it
-        const fadeInStart = isMobile ? 150 : 80;
-        const fadeInEnd = isMobile ? 80 : 40;
-        const fadeOutStart = isMobile ? 20 : 5;
-        const fadeOutEnd = isMobile ? -30 : -15;
+        // 🔥 PRECISE FIX: Increased ranges for slow scroll
+        // Text starts fading in at 200 units away and is full by 120 units
+        const fadeInStart = isMobile ? 220 : 180; 
+        const fadeInEnd = isMobile ? 120 : 100;
+        const fadeOutStart = 20; 
+        const fadeOutEnd = -20;
 
         if (distance < fadeInStart && distance > fadeOutEnd) {
-            if (distance > fadeInEnd) opacity = THREE.MathUtils.mapLinear(distance, fadeInStart, fadeInEnd, 0, 1);
-            else if (distance < fadeOutStart) opacity = THREE.MathUtils.mapLinear(distance, fadeOutStart, fadeOutEnd, 1, 0);
-            else opacity = 1;
+            if (distance > fadeInEnd) {
+                opacity = THREE.MathUtils.mapLinear(distance, fadeInStart, fadeInEnd, 0, 1);
+            } else if (distance < fadeOutStart) {
+                opacity = THREE.MathUtils.mapLinear(distance, fadeOutStart, fadeOutEnd, 1, 0);
+            } else {
+                opacity = 1;
+            }
         }
+        
         htmlRef.current.style.opacity = opacity;
         htmlRef.current.style.transform = `translateY(${Math.sin(state.clock.elapsedTime) * 10}px)`;
 
-        // 2. INTERACTIVE ROTATION LOGIC
         if (interactiveGroupRef.current) {
-            // Apply a friction/damping effect to the manual rotation
             if (!isDragging) {
-                rotationVelocity.current *= 0.95; // Slows down when released
+                rotationVelocity.current *= 0.95;
             }
             currentRotation.current += rotationVelocity.current;
             interactiveGroupRef.current.rotation.y = currentRotation.current;
         }
     });
 
-    // --- POINTER EVENT HANDLERS ---
     const handlePointerDown = (e) => {
-        e.stopPropagation(); // Prevents scroll interference on the mesh
+        e.stopPropagation();
         setIsDragging(true);
         lastPointerX.current = e.clientX;
         document.body.style.cursor = 'grabbing';
@@ -122,25 +113,21 @@ function EmperorStatue({
     const handlePointerMove = (e) => {
         if (!isDragging) return;
         const deltaX = e.clientX - lastPointerX.current;
-        // Sensitivity control (0.007 is smooth for marble)
         rotationVelocity.current = deltaX * 0.007;
         lastPointerX.current = e.clientX;
     };
 
-    // --- RESPONSIVE POSITIONING ---
-    // If we're on mobile, we want to pull statues closer to the center (-3)
     const centerX = -3;
     const desktopCenterX = -6.17;
     const currentSceneCenter = isMobile ? centerX : desktopCenterX;
 
     const responsiveX = isMobile
-        ? currentSceneCenter + (position[0] - desktopCenterX) * 0.5 // Pull towards mobile center
+        ? currentSceneCenter + (position[0] - desktopCenterX) * 0.5
         : position[0];
 
     return (
         <group position={[responsiveX, position[1], position[2]]} rotation={rotation}>
             <group scale={mobileScaleFactor}>
-                {/* 1. THE PODIUM */}
                 <group position={podiumOffset}>
                     <mesh castShadow receiveShadow position={[0, -podiumSize[1] / 2, 0]}>
                         <boxGeometry args={podiumSize} />
@@ -152,7 +139,6 @@ function EmperorStatue({
                     </mesh>
                 </group>
 
-                {/* 2. THE INTERACTIVE STATUE BUST */}
                 <group
                     ref={interactiveGroupRef}
                     onPointerDown={handlePointerDown}
@@ -172,7 +158,6 @@ function EmperorStatue({
                 </group>
             </group>
 
-            {/* 3. INFO TEXT */}
             {name && (
                 <Html
                     position={textOffset}
@@ -183,12 +168,11 @@ function EmperorStatue({
                 >
                     <div ref={htmlRef} style={{
                         opacity: 0,
-                        transition: 'opacity 0.3s ease-out',
-                        width: isMobile ? '100px' : '300px',
+                        transition: 'opacity 0.6s ease-out', // Slightly slower transition for premium feel
+                        width: isMobile ? '100px' : '450px', // Increased width for better layout
                         pointerEvents: 'none',
                         color: 'white',
                         textAlign: 'left',
-                        // textShadow: isMobile ? '0px 0px 4px rgba(0,0,0,0.5)' : 'none'
                     }}>
                         <h1 style={{
                             fontSize: isMobile ? '16px' : '5rem',
@@ -198,7 +182,8 @@ function EmperorStatue({
                             letterSpacing: isMobile ? '2px' : '12px',
                             fontWeight: 'normal',
                             textTransform: 'uppercase',
-                            lineHeight: 1
+                            lineHeight: 1,
+                            textShadow: '0 0 20px rgba(255,223,0,0.2)'
                         }}>{name}</h1>
                         <p style={{
                             fontSize: isMobile ? '8px' : '1.4rem',
@@ -210,11 +195,11 @@ function EmperorStatue({
                         }}>{quote}</p>
                         <p style={{
                             fontSize: isMobile ? '8px' : '0.9rem',
-                            color: '#fff',
+                            color: '#fff', // Muted color for description
                             marginTop: '5px',
                             maxWidth: isMobile ? '130px' : '350px',
                             fontWeight: 'normal',
-                            lineHeight: '1.2'
+                            lineHeight: '1.4'
                         }}>
                             {description}
                         </p>

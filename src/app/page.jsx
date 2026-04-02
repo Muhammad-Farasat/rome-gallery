@@ -93,7 +93,7 @@ export default function Home() {
         trigger: container.current,
         start: "top top",
         end: "bottom bottom",
-        scrub: 0.1,
+        scrub: true,
       },
       onUpdate: () => {
         const progress = scrollData.current.progress;
@@ -368,7 +368,7 @@ export default function Home() {
           </button>
         </div>
       </div>
-      <div className="h-[1000vh] w-full" />
+      <div className="h-[5000vh] w-full" />
     </main>
   );
 }

@@ -11,10 +11,10 @@ export default function SmoothScroll({ children }) {
     useEffect(() => {
         // 1. Initialize Lenis (starts stopped — gate must open first)
         const lenis = new Lenis({
-            duration: 2.2,
-            lerp: 0.05,
+            duration: 2.5,       // 🔥 Increased from 2.2 (Longer, more graceful stop)
+            lerp: 0.04,          // 🔥 Decreased from 0.05 (Smoother follow)
             smoothWheel: true,
-            wheelMultiplier: 0.8,
+            wheelMultiplier: 0.5, // 🔥 Decreased from 0.8 (Much less jumpy on mouse wheel)
             autoStart: false,
         });
 
