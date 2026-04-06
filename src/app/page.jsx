@@ -103,6 +103,7 @@ export default function Home() {
           let op = (progress - 0.80) / (0.92 - 0.80);
           op = Math.max(0, Math.min(1, op));
 
+          finalScreen.style.visibility = op > 0 ? "visible" : "hidden";
           finalScreen.style.opacity = op.toString();
           finalScreen.style.pointerEvents = op > 0.8 ? "auto" : "none";
           finalScreen.style.transform = `scale(${0.95 + (op * 0.05)})`
@@ -127,7 +128,15 @@ export default function Home() {
   // 🔥 THE CINEMATIC RESET (MAXIMUM SLOW & TRANSCENDENT)
   const handleRestart = () => {
     // 1. Fade UI slowly
-    gsap.to("#final-screen", { opacity: 0, duration: 1.0, ease: "power2.inOut" });
+    gsap.to("#final-screen", {
+      opacity: 0,
+      duration: 1.0,
+      ease: "power2.inOut",
+      onComplete: () => {
+        const el = document.getElementById("final-screen");
+        if (el) el.style.visibility = "hidden";
+      }
+    });
 
     // 2. Thick Fog In (Divine Whiteout) - SLOWER
     gsap.to(scrollData.current, {
@@ -346,7 +355,7 @@ export default function Home() {
       <div
         id="final-screen"
         className="fixed inset-0 z-50 flex flex-col items-center justify-center opacity-0 pointer-events-none"
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', visibility: 'hidden' }}
       >
         <div className="text-center pointer-events-auto">
           {/* 🔥 REMOVED opacity-20 and added a subtle glow */}

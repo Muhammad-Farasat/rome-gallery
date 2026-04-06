@@ -165,6 +165,7 @@ function EmperorStatue({
                     transform
                     distanceFactor={isMobile ? 80 : 30}
                     rotation={textRotation}
+                    pointerEvents="none" // let pointer events pass through to the statue
                 >
                     <div ref={htmlRef} style={{
                         opacity: 0,
